@@ -29,13 +29,22 @@
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
         
-        <!-- Tela 1: Seleção de Turma -->
+        <!-- Tela 1: Seleção de Turma e Ranking -->
         <div id="class-selection-view" class="view">
             <header class="text-center mb-8">
                 <h1 class="text-3xl sm:text-4xl font-bold text-blue-600">Roteiro de Atividades da Gincana</h1>
-                <p class="text-gray-600 mt-2">Selecione sua turma para ver o cronograma e registrar as pontuações.</p>
             </header>
+            
+            <!-- Seção de Ranking -->
+            <div id="ranking-section" class="mb-10">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">🏆 Ranking Geral 🏆</h2>
+                <div id="ranking-table" class="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                    <p class="text-center text-gray-500">Calculando pontuações...</p>
+                </div>
+            </div>
+            
             <main>
+                 <p class="text-gray-600 mt-2 text-center mb-6">Selecione sua turma para ver o cronograma e registrar as pontuações.</p>
                 <div id="class-buttons" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 </div>
             </main>
@@ -79,7 +88,7 @@
         // Importações dos módulos do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- INÍCIO DA LÓGICA DO SITE ---
         
@@ -90,7 +99,7 @@
             apiKey: "AIzaSyAwI-bcZe-k9dv38LtQRfee25iSOWOCPqs",
             authDomain: "agita-esportivo.firebaseapp.com",
             projectId: "agita-esportivo",
-            storageBucket: "agita-esportivo.appspot.com", // Corrigido para o formato padrão do Firestore
+            storageBucket: "agita-esportivo.appspot.com",
             messagingSenderId: "493917143963",
             appId: "1:493917143963:web:9e444bb6a5f7b16e1a573e",
             measurementId: "G-GJC1DBQNZP"
@@ -119,15 +128,12 @@
         
         async function saveScoresToFirestore() {
             if (!currentClass || !db) return;
-            
             const scoresToSave = {};
             const scoreInputs = scheduleList.querySelectorAll('.score-input');
             scoreInputs.forEach(input => {
                 const round = input.dataset.round;
                 const scoreValue = input.value;
-                if (scoreValue !== "") {
-                    scoresToSave[round] = Number(scoreValue);
-                }
+                if (scoreValue !== "") scoresToSave[round] = Number(scoreValue);
             });
 
             const docRef = doc(db, `artifacts/${appId}/public/data/scores`, currentClass);
@@ -135,7 +141,7 @@
                 await setDoc(docRef, { scores: scoresToSave }, { merge: true });
                 saveFeedback.textContent = 'Pontuação salva com sucesso!';
                 setTimeout(() => { saveFeedback.textContent = ''; }, 2500);
-            } catch (error) { // Correção aqui
+            } catch (error) {
                 console.error("Erro ao salvar pontuação: ", error);
                 saveFeedback.textContent = 'Erro ao salvar. Tente novamente.';
                 setTimeout(() => { saveFeedback.textContent = ''; }, 2500);
@@ -144,25 +150,70 @@
         
         function listenForScoreChanges(className) {
             if (unsubscribeFromScores) unsubscribeFromScores();
-            
             const docRef = doc(db, `artifacts/${appId}/public/data/scores`, className);
             unsubscribeFromScores = onSnapshot(docRef, (docSnap) => {
                 const scoreData = docSnap.exists() ? docSnap.data().scores || {} : {};
                 const scoreInputs = scheduleList.querySelectorAll('.score-input');
                 let total = 0;
-                
                 scoreInputs.forEach(input => {
                     const round = input.dataset.round;
                     const savedScore = scoreData[round] || '';
-                    if (document.activeElement !== input) {
-                        input.value = savedScore;
-                    }
+                    if (document.activeElement !== input) input.value = savedScore;
                     total += Number(input.value) || 0;
                 });
-                
                 totalScoreEl.textContent = total;
             });
         }
+
+        // --- Novas Funções para o Ranking ---
+        function displayRanking(rankingData) {
+            const rankingContainer = document.getElementById('ranking-table');
+            if (!rankingContainer) return;
+
+            if (rankingData.length === 0) {
+                rankingContainer.innerHTML = '<p class="text-center text-gray-500">Nenhuma pontuação registrada ainda.</p>';
+                return;
+            }
+
+            let html = '<ol class="space-y-2">';
+            rankingData.forEach((team, index) => {
+                const rank = index + 1;
+                let rankClasses = 'bg-gray-200 text-gray-700';
+                if (rank === 1) rankClasses = 'bg-amber-400 text-white';
+                if (rank === 2) rankClasses = 'bg-slate-400 text-white';
+                if (rank === 3) rankClasses = 'bg-orange-400 text-white';
+
+                html += `
+                    <li class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full ${rankClasses}">${rank}</span>
+                            <span class="font-medium text-gray-800">${team.className}</span>
+                        </div>
+                        <span class="text-blue-600 font-semibold">${team.totalScore} pontos</span>
+                    </li>
+                `;
+            });
+            html += '</ol>';
+            rankingContainer.innerHTML = html;
+        }
+
+        function listenForOverallRanking() {
+            const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
+            onSnapshot(scoresCollectionRef, (snapshot) => {
+                const rankingData = [];
+                snapshot.forEach(doc => {
+                    const scores = doc.data().scores || {};
+                    let totalScore = 0;
+                    for (const round in scores) {
+                        totalScore += Number(scores[round]) || 0;
+                    }
+                    rankingData.push({ className: doc.id, totalScore });
+                });
+                rankingData.sort((a, b) => b.totalScore - a.totalScore);
+                displayRanking(rankingData);
+            });
+        }
+        // --- Fim das Funções de Ranking ---
         
         function showView(viewToShow) {
             classSelectionView.classList.add('hidden');
@@ -174,27 +225,14 @@
             currentClass = className;
             scheduleTitle.textContent = `Roteiro da Turma: ${className}`;
             const schedule = schedules[className];
-
             let html = '<ol class="list-inside space-y-4 text-gray-700">';
             schedule.forEach((activityId, index) => {
                 const round = index + 1;
                 const activityName = activities[activityId];
-                html += `
-                    <li class="p-3 bg-gray-100 rounded-lg border border-gray-200 flex justify-between items-center flex-wrap gap-2">
-                        <div class="flex-grow pr-4">
-                            <span class="font-semibold text-gray-800 block sm:inline">Rodada ${round}:</span>
-                            <span class="text-sm sm:text-base"> Atividade ${activityId} - ${activityName}</span>
-                        </div>
-                        <input
-                            type="number" min="0"
-                            class="score-input w-28 p-2 border border-gray-300 rounded-md text-center shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Pontos" data-round="${round}"
-                        >
-                    </li>`;
+                html += `<li class="p-3 bg-gray-100 rounded-lg border border-gray-200 flex justify-between items-center flex-wrap gap-2"><div class="flex-grow pr-4"><span class="font-semibold text-gray-800 block sm:inline">Rodada ${round}:</span><span class="text-sm sm:text-base"> Atividade ${activityId} - ${activityName}</span></div><input type="number" min="0" class="score-input w-28 p-2 border border-gray-300 rounded-md text-center shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Pontos" data-round="${round}"></li>`;
             });
             html += '</ol>';
             scheduleList.innerHTML = html;
-            
             listenForScoreChanges(className);
             showView(scheduleView);
             window.scrollTo(0, 0);
@@ -204,22 +242,11 @@
             loadingOverlay.classList.remove('hidden');
             try {
                 const runningOnPlatform = typeof __firebase_config !== 'undefined' && __firebase_config;
-                
-                const firebaseConfig = runningOnPlatform
-                    ? JSON.parse(__firebase_config)
-                    : localFirebaseConfig;
-
-                appId = runningOnPlatform
-                    ? __app_id
-                    : 'gincana-local';
+                const firebaseConfig = runningOnPlatform ? JSON.parse(__firebase_config) : localFirebaseConfig;
+                appId = runningOnPlatform ? __app_id : 'gincana-local';
 
                 if (!runningOnPlatform && (!firebaseConfig || !firebaseConfig.apiKey)) {
-                    document.body.innerHTML = `
-                        <div class="text-red-600 text-center p-8 max-w-2xl mx-auto bg-red-50 rounded-lg shadow-md">
-                            <h2 class="font-bold text-xl mb-4">CONFIGURAÇÃO INCOMPLETA</h2>
-                            <p>Para usar este aplicativo localmente, você precisa criar um projeto no Firebase e colar suas credenciais no código.</p>
-                            <p class="mt-4 text-sm text-left text-gray-700">1. Vá para <a href="https://firebase.google.com/" target="_blank" class="text-blue-600 underline">firebase.google.com</a> e crie um novo projeto.<br>2. Adicione um "Aplicativo da Web" ao seu projeto.<br>3. Copie o objeto de configuração do Firebase.<br>4. Cole as credenciais dentro da variável <strong>localFirebaseConfig</strong> neste arquivo HTML.</p>
-                        </div>`;
+                    document.body.innerHTML = `<div class="text-red-600 text-center p-8 max-w-2xl mx-auto bg-red-50 rounded-lg shadow-md"><h2 class="font-bold text-xl mb-4">CONFIGURAÇÃO INCOMPLETA</h2><p>Para usar este aplicativo localmente, você precisa criar um projeto no Firebase e colar suas credenciais no código.</p><p class="mt-4 text-sm text-left text-gray-700">1. Vá para <a href="https://firebase.google.com/" target="_blank" class="text-blue-600 underline">firebase.google.com</a> e crie um novo projeto.<br>2. Adicione um "Aplicativo da Web" ao seu projeto.<br>3. Copie o objeto de configuração do Firebase.<br>4. Cole as credenciais dentro da variável <strong>localFirebaseConfig</strong> neste arquivo HTML.</p></div>`;
                     return;
                 }
 
@@ -233,6 +260,9 @@
                     await signInAnonymously(auth);
                 }
                 
+                // Inicia o listener do ranking geral
+                listenForOverallRanking();
+
                 classNames.forEach(className => {
                     const button = document.createElement('button');
                     button.textContent = className;
