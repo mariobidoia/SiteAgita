@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agita Esportivo SENAI Marília</title>
+    <!-- Favicon adicionado para um toque profissional -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .bounce-in { animation: bounceIn 0.6s ease-out; }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse-glow { animation: pulseGlow 2s infinite; }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 83, 159, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(0, 83, 159, 0.8); }
+        }
+        
+        .gradient-text {
+            background: linear-gradient(45deg, #00539F, #FF6900, #00539F, #FF6900);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 4s ease infinite;
+        }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .hover-float:hover {
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
+
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-in-out;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Cores SENAI */
+        .bg-primary { background-color: #00539F; }
+        .bg-secondary { background-color: #FF6900; }
+        .bg-accent { background-color: #003366; }
+        .text-primary { color: #00539F; }
+        .text-secondary { color: #FF6900; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Cabeçalho -->
+        <header class="text-center mb-8 bounce-in">
+            <h1 class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">🏆 Agita Esportivo SENAI Marília 🏆</h1>
+            <p class="text-lg md:text-xl text-gray-700 font-semibold">⚡ Sistema de Pontuação em Tempo Real ⚡</p>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="flex justify-center items-center mb-8 gap-4">
+            <button id="homeBtn" class="bg-primary text-white px-6 py-3 rounded-full font-bold hover:bg-blue-800 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2 pulse-glow">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Início
+            </button>
+            <button id="rankingBtn" class="bg-secondary text-white px-6 py-3 rounded-full font-bold hover:bg-orange-600 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17h4v-2.34"/><path d="M8 19h8"/><path d="M12 12v2.34"/><path d="m14 9-2-3-2 3"/><path d="M12 2v5.66"/></svg>
+                Ranking Geral
+            </button>
+        </nav>
+
+        <!-- View Principal: Início -->
+        <main id="homeView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Atividades serão populadas via JavaScript -->
+        </main>
+
+        <!-- View: Detalhes da Atividade -->
+        <section id="activityView" class="hidden">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-5xl mx-auto border-t-8 border-primary">
+                <div class="flex flex-col md:flex-row items-center justify-between mb-8">
+                    <h2 id="activityTitle" class="text-3xl font-bold text-primary mb-4 md:mb-0 text-center md:text-left"></h2>
+                    <button id="backBtn" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-300 transition-all transform hover:scale-105 shadow-md flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        Voltar
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6" id="teamsGrid">
+                    <!-- Times serão populados via JavaScript -->
+                </div>
+                
+                <div class="mt-8 flex justify-center">
+                    <button id="saveScoresBtn" class="bg-green-600 text-white px-10 py-4 rounded-full font-bold hover:bg-green-700 transition-all transform hover:scale-105 shadow-lg pulse-glow flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Salvar Pontuações
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal de Senha -->
+        <div id="passwordModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-t-8 border-primary bounce-in">
+                <h3 class="text-2xl font-bold text-primary mb-6 text-center">🔒 Acesso Restrito</h3>
+                <p class="text-gray-600 mb-4 text-center">Digite a senha para visualizar o ranking:</p>
+                <input type="password" id="passwordInput" class="w-full px-4 py-3 border-2 border-primary rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/30 text-center text-lg font-bold mb-6" placeholder="••••••••">
+                <div id="passwordError" class="hidden text-red-600 text-center mb-4 font-semibold">
+                    Senha incorreta. Tente novamente.
+                </div>
+                <div class="flex gap-4">
+                    <button id="cancelPasswordBtn" class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-full hover:bg-gray-300 transition-all font-semibold">Cancelar</button>
+                    <button id="confirmPasswordBtn" class="flex-1 bg-primary text-white px-6 py-3 rounded-full hover:bg-blue-800 transition-all font-bold">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Ranking -->
+        <section id="rankingView" class="hidden">
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-4xl mx-auto border-t-8 border-primary">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-primary">🏆 Ranking Geral das Turmas 🏆</h2>
+                <div id="rankingList" class="space-y-4">
+                    <!-- Ranking será populado via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast fixed bottom-5 right-5 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span>Pontuações salvas com sucesso!</span>
+        </div>
+    </div>
+    
+    <!-- Scripts Firebase -->
+    <script type="module">
+        // Importações do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DADOS E CONFIGURAÇÃO ---
+        const activities = ["ESCALADA HORIZONTAL", "ATLETISMO", "BOLA AO CESTO", "GINÁSTICA", "ARREMESSO AO ALVO", "CHINELO DE PAU", "PULAR CORDA", "DESAFIO DO TRAVESSÃO", "CORRER ENSACADO", "PULAR CORDA INDIVIDUAL", "DESAFIO DE EMBAIXADINHAS", "REVEZAMENTO MALUCO", "CORRIDA DE PARCEIROS", "CORRIDA DA COLHER", "CARRINHO DE MÃO HUMANO", "MONTAGEM DA FRASE", "QUEBRA-CABEÇA", "ARREMESSO NO COPO"];
+        const teams = ["M1B", "T2B", "M2E", "T2C", "M2A", "T2A", "1QSD", "1AT", "2MM", "2MT", "1ETM", "1DTM", "2ETM", "2DTM", "1ADMM", "1ADMT", "T1AD"];
+        const correctPassword = "aquelemario"; // Mantenha a senha como solicitado
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'agita-senai-marilia';
+
+        // --- CONFIGURAÇÃO DO FIREBASE ---
+        // As configurações do Firebase serão injetadas automaticamente no ambiente de produção.
+        // Para desenvolvimento local, substitua pelo seu objeto de configuração.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAwI-bcZe-k9dv38LtQRfee25iSOWOCPqs",
+            authDomain: "agita-esportivo.firebaseapp.com",
+            projectId: "agita-esportivo",
+            storageBucket: "agita-esportivo.appspot.com",
+            messagingSenderId: "493917143963",
+            appId: "1:493917143963:web:9e444bb6a5f7b16e1a573e"
+        };
+        
+        // --- INICIALIZAÇÃO DO FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        setLogLevel('debug'); // Habilita logs detalhados para depuração
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let scores = {};
+        let currentActivity = null;
+        let dbRef;
+
+        // --- ELEMENTOS DO DOM ---
+        const homeView = document.getElementById('homeView');
+        const activityView = document.getElementById('activityView');
+        const rankingView = document.getElementById('rankingView');
+        const passwordModal = document.getElementById('passwordModal');
+        const homeBtn = document.getElementById('homeBtn');
+        const rankingBtn = document.getElementById('rankingBtn');
+        const backBtn = document.getElementById('backBtn');
+        const activityTitle = document.getElementById('activityTitle');
+        const teamsGrid = document.getElementById('teamsGrid');
+        const saveScoresBtn = document.getElementById('saveScoresBtn');
+        const passwordInput = document.getElementById('passwordInput');
+        const confirmPasswordBtn = document.getElementById('confirmPasswordBtn');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+        const passwordError = document.getElementById('passwordError');
+        const toast = document.getElementById('toast');
+
+        // --- FUNÇÕES DE NAVEGAÇÃO E VISUALIZAÇÃO ---
+        function showView(viewToShow) {
+            [homeView, activityView, rankingView, passwordModal].forEach(view => {
+                view.classList.add('hidden');
+            });
+            viewToShow.classList.remove('hidden');
+        }
+        
+        function showHome() {
+            showView(homeView);
+            renderActivities();
+        }
+
+        function showActivity(activityIndex) {
+            currentActivity = activityIndex;
+            showView(activityView);
+            activityTitle.textContent = `${activityIndex + 1}. ${activities[activityIndex]}`;
+            renderTeams();
+        }
+
+        function showPasswordModal() {
+            passwordModal.classList.remove('hidden'); // Modal é um overlay, não oculta outras views
+            passwordInput.value = '';
+            passwordError.classList.add('hidden');
+            passwordInput.focus();
+        }
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
+        function renderActivities() {
+            homeView.innerHTML = '';
+            const colors = ['bg-primary', 'bg-secondary', 'bg-accent'];
+            const emojis = ['🧗', '🏃', '🏀', '🤸', '🎯', '👟', '🪢', '⚽', '🏃‍♂️', '🪢', '⚽', '🏃‍♀️', '👫', '🥄', '🤝', '🧩', '🧩', '🥤'];
+            
+            activities.forEach((activity, index) => {
+                const isCompleted = teams.some(team => scores[index]?.[team] > 0);
+                const card = document.createElement('div');
+                const row = Math.floor(index / 4);
+                const colorClass = colors[row % colors.length];
+
+                card.className = `rounded-xl shadow-lg hover:shadow-2xl transition-all cursor-pointer p-5 transform hover:scale-105 hover-float bounce-in relative overflow-hidden ${colorClass}`;
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.innerHTML = `
+                    ${isCompleted ? '<div class="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">✔</div>' : ''}
+                    <div class="flex items-center justify-between text-white">
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold mb-1">${index + 1}. ${activity}</h3>
+                            <p class="text-xs opacity-90">Clique para pontuar</p>
+                        </div>
+                        <div class="text-4xl ml-2">${emojis[index]}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => showActivity(index));
+                homeView.appendChild(card);
+            });
+        }
+
+        function renderTeams() {
+            teamsGrid.innerHTML = '';
+            teams.forEach((team, index) => {
+                const card = document.createElement('div');
+                card.className = `bg-gray-50 rounded-lg p-3 border-2 border-gray-200 shadow-sm transform hover:scale-105 transition-all bounce-in`;
+                card.style.animationDelay = `${index * 0.03}s`;
+                card.innerHTML = `
+                    <label class="block text-sm font-bold text-gray-700 mb-2 text-center">${team}</label>
+                    <input 
+                        type="number" 
+                        min="0" 
+                        value="${scores[currentActivity]?.[team] || 0}"
+                        class="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg font-bold"
+                        data-team="${team}"
+                    >
+                `;
+                teamsGrid.appendChild(card);
+            });
+        }
+
+        function renderRanking() {
+            const teamTotals = {};
+            teams.forEach(team => {
+                teamTotals[team] = 0;
+                activities.forEach((_, activityIndex) => {
+                    teamTotals[team] += scores[activityIndex]?.[team] || 0;
+                });
+            });
+            
+            const sortedTeams = Object.entries(teamTotals).sort(([,a], [,b]) => b - a);
+            const rankingList = document.getElementById('rankingList');
+            rankingList.innerHTML = '';
+            
+            sortedTeams.forEach(([team, total], index) => {
+                const item = document.createElement('div');
+                const position = index + 1;
+                let medal = '', bgColor = 'bg-white', textColor = 'text-gray-800', specialClasses = 'border-gray-200';
+                
+                if (position === 1) { [medal, bgColor, textColor, specialClasses] = ['🥇', 'bg-yellow-400', 'text-white', 'border-yellow-500 font-bold']; } 
+                else if (position === 2) { [medal, bgColor, textColor, specialClasses] = ['🥈', 'bg-gray-300', 'text-gray-900', 'border-gray-400 font-semibold']; } 
+                else if (position === 3) { [medal, bgColor, textColor, specialClasses] = ['🥉', 'bg-orange-400', 'text-white', 'border-orange-500 font-semibold']; }
+                
+                item.className = `flex items-center justify-between p-4 rounded-xl border-2 shadow-md transform hover:scale-105 transition-all bounce-in ${bgColor} ${specialClasses}`;
+                item.style.animationDelay = `${index * 0.05}s`;
+                item.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="text-3xl mr-4">${position}º ${medal}</span>
+                        <span class="text-xl ${textColor}">${team}</span>
+                    </div>
+                    <div class="text-2xl font-bold ${textColor}">${total} pts</div>
+                `;
+                rankingList.appendChild(item);
+            });
+        }
+
+        // --- INTERAÇÕES COM FIREBASE ---
+        async function connectToFirestore() {
+            await signInAnonymously(auth);
+            dbRef = doc(db, "gincanas", appId);
+            
+            onSnapshot(dbRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    scores = docSnap.data().scores || createInitialScores();
+                    console.log("Dados recebidos do Firestore:", scores);
+                } else {
+                    console.log("Documento não encontrado, criando um novo.");
+                    scores = createInitialScores();
+                    saveScoresToFirestore(true); // Salva a estrutura inicial
+                }
+                // Re-renderiza a view atual com os novos dados
+                if (homeView.classList.contains('hidden') === false) renderActivities();
+                if (rankingView.classList.contains('hidden') === false) renderRanking();
+            });
+        }
+        
+        function createInitialScores() {
+            const initialScores = {};
+            activities.forEach((_, index) => {
+                initialScores[index] = {};
+                teams.forEach(team => {
+                    initialScores[index][team] = 0;
+                });
+            });
+            return initialScores;
+        }
+
+        async function saveScoresToFirestore(isInitial = false) {
+            if (!isInitial) {
+                 const inputs = teamsGrid.querySelectorAll('input');
+                 if (!scores[currentActivity]) scores[currentActivity] = {};
+                 inputs.forEach(input => {
+                    const team = input.dataset.team;
+                    scores[currentActivity][team] = parseInt(input.value) || 0;
+                });
+            }
+           
+            try {
+                await setDoc(dbRef, { scores: scores });
+                if (!isInitial) showToast("Pontuações salvas com sucesso!");
+            } catch (error) {
+                console.error("Erro ao salvar no Firestore: ", error);
+                showToast("Erro ao salvar. Verifique o console.", true);
+            }
+        }
+
+        // --- LÓGICA DE UI ADICIONAL ---
+        function showToast(message, isError = false) {
+            toast.textContent = message;
+            toast.className = `toast show fixed bottom-5 right-5 text-white px-6 py-3 rounded-full shadow-lg font-bold ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function checkPassword() {
+            if (passwordInput.value === correctPassword) {
+                showView(rankingView);
+                renderRanking();
+            } else {
+                passwordError.classList.remove('hidden');
+                passwordInput.classList.add('border-red-500');
+                setTimeout(() => {
+                    passwordError.classList.add('hidden');
+                    passwordInput.classList.remove('border-red-500');
+                }, 3000);
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        homeBtn.addEventListener('click', showHome);
+        rankingBtn.addEventListener('click', showPasswordModal);
+        backBtn.addEventListener('click', showHome);
+        saveScoresBtn.addEventListener('click', () => saveScoresToFirestore(false));
+        confirmPasswordBtn.addEventListener('click', checkPassword);
+        cancelPasswordBtn.addEventListener('click', () => passwordModal.classList.add('hidden'));
+        passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && checkPassword());
+
+        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+        showHome();
+        connectToFirestore();
+    </script>
+</body>
+</html>
