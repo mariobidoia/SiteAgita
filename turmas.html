@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placar da Gincana por Atividade</title>
+    <!-- Incluindo o framework Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluindo a fonte Inter do Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .view { transition: opacity 0.3s ease-in-out; width: 100%; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] { -moz-appearance: textfield; }
+        /* Estilo para feedback visual durante carregamento */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.7); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex items-center justify-center min-h-screen">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
+        
+        <!-- Tela 1: Seleção de Atividade e Ranking -->
+        <div id="main-view" class="view">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-blue-600">Placar da Gincana</h1>
+            </header>
+            
+            <!-- Seção de Ranking -->
+            <div id="ranking-section" class="mb-10">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">🏆 Ranking Geral 🏆</h2>
+                <div id="ranking-table" class="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                    <p class="text-center text-gray-500">Calculando pontuações...</p>
+                </div>
+            </div>
+            
+            <main>
+                 <p class="text-gray-600 mt-2 text-center mb-6">Selecione uma atividade para registrar as pontuações.</p>
+                <div id="activity-buttons" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                </div>
+            </main>
+        </div>
+
+        <!-- Tela 2: Visualização por Atividade -->
+        <div id="activity-detail-view" class="view hidden">
+            <header class="flex items-center justify-between mb-6 flex-wrap">
+                <h2 id="activity-title" class="text-2xl sm:text-3xl font-bold text-blue-700"></h2>
+                <button id="back-button" class="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    &larr; Voltar
+                </button>
+            </header>
+            <main>
+                <div id="class-list-by-activity" class="bg-white p-4 sm:p-6 rounded-lg shadow-lg min-h-[200px]">
+                     <!-- Conteúdo dinâmico -->
+                </div>
+                <div class="mt-6 text-center">
+                     <button id="save-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Salvar Pontuações
+                    </button>
+                    <p id="save-feedback" class="text-green-600 mt-2 h-5 text-sm"></p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Overlay de Carregamento -->
+        <div id="loading" class="loading-overlay hidden">
+            <p class="text-blue-600 font-semibold">Carregando...</p>
+        </div>
+
+    </div>
+
+    <!-- Módulo para carregar e configurar o Firebase -->
+    <script type="module">
+        // Importações dos módulos do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- INÍCIO DA LÓGICA DO SITE ---
+        
+        // =================================================================================
+        // CONFIGURAÇÃO DO FIREBASE PARA USO LOCAL (VS CODE)
+        // =================================================================================
+        const localFirebaseConfig = {
+            apiKey: "AIzaSyAwI-bcZe-k9dv38LtQRfee25iSOWOCPqs",
+            authDomain: "agita-esportivo.firebaseapp.com",
+            projectId: "agita-esportivo",
+            storageBucket: "agita-esportivo.appspot.com",
+            messagingSenderId: "493917143963",
+            appId: "1:493917143963:web:9e444bb6a5f7b16e1a573e"
+        };
+        // =================================================================================
+
+        // 1. DADOS ESTÁTICOS
+        const activities = { 1: "ESCALADA HORIZONTAL", 2: "ATLETISMO", 3: "BOLA AO CESTO", 4: "GINÁSTICA", 5: "ARREMESSO AO ALVO", 6: "CHINELO DE PAU", 7: "PULAR CORDA", 8: "DESAFIO DO TRAVESSÃO", 9: "CORRER ENSACADO", 10: "PULAR CORDA INDIVIDUAL", 11: "DESAFIO DE EMBAIXADINHAS", 12: "REVEZAMENTO MALUCO", 13: "CORRIDA DE PARCEIROS", 14: "CORRIDA DA COLHER", 15: "CARRINHO DE MÃO HUMANO", 16: "MONTAGEM DA FRASE", 17: "QUEBRA-CABEÇA", 18: "ARREMESSO NO COPO" };
+        const classNames = ["M1B", "T2B", "M2E", "T2C", "M2A", "T2A", "1QSD", "1AT", "2MM", "2MT", "1ETM", "1DTM", "2ETM", "2DTM", "1ADMM", "1ADMT", "T1AD"];
+        const schedules = { "M1B": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], "T2B": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1], "M2E": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2], "T2C": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3], "M2A": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4], "T2A": [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5], "1QSD": [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6], "1AT": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7], "2MM": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8], "2MT": [10, 11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9], "1ETM": [11, 12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "1DTM": [12, 13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "2ETM": [13, 14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], "2DTM": [14, 15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], "1ADMM": [15, 16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14], "1ADMT": [16, 17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "T1AD": [17, 18, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] };
+        
+        // 2. VARIÁVEIS GLOBAIS
+        let db, auth, appId;
+        let currentActivityId = null;
+        let invertedSchedules = {};
+
+        // 3. SELEÇÃO DE ELEMENTOS HTML
+        const mainView = document.getElementById('main-view');
+        const activityDetailView = document.getElementById('activity-detail-view');
+        const activityButtonsContainer = document.getElementById('activity-buttons');
+        const backButton = document.getElementById('back-button');
+        const activityTitle = document.getElementById('activity-title');
+        const classListByActivity = document.getElementById('class-list-by-activity');
+        const saveButton = document.getElementById('save-button');
+        const saveFeedback = document.getElementById('save-feedback');
+        const loadingOverlay = document.getElementById('loading');
+        
+        // 4. FUNÇÕES DE LÓGICA E BANCO DE DADOS
+        function createInvertedSchedules() {
+            for (let i = 1; i <= 18; i++) invertedSchedules[i] = [];
+            for (const className of classNames) {
+                schedules[className].forEach((activityId, roundIndex) => {
+                    const roundForClass = roundIndex + 1;
+                    invertedSchedules[activityId].push({ round: roundForClass, class: className });
+                });
+            }
+             // Ordena por rodada da gincana
+            for (let i = 1; i <= 18; i++) {
+                invertedSchedules[i].sort((a,b) => {
+                    const classA_firstActivity = schedules[a.class][0];
+                    const classB_firstActivity = schedules[b.class][0];
+
+                    // Calcula a "rodada global" da gincana
+                    const globalRoundA = (a.round + (classA_firstActivity - 1) - 1) % 18 + 1;
+                    const globalRoundB = (b.round + (classB_firstActivity - 1) - 1) % 18 + 1;
+
+                    return globalRoundA - globalRoundB;
+                });
+            }
+        }
+
+        async function saveScoresFromActivityView() {
+            if (!currentActivityId || !db) return;
+
+            const batch = writeBatch(db);
+            const scoreEntries = classListByActivity.querySelectorAll('.score-entry');
+            
+            scoreEntries.forEach(entry => {
+                const { className, roundForClass } = entry.dataset;
+                const scoreValue = entry.querySelector('.score-input').value;
+
+                if (scoreValue !== "" && className && roundForClass) {
+                    const docRef = doc(db, `artifacts/${appId}/public/data/scores`, className);
+                    batch.set(docRef, { scores: { [roundForClass]: Number(scoreValue) } }, { merge: true });
+                }
+            });
+
+            try {
+                await batch.commit();
+                saveFeedback.textContent = 'Pontuações salvas com sucesso!';
+                setTimeout(() => { saveFeedback.textContent = ''; }, 2500);
+            } catch (error) {
+                console.error("Erro ao salvar pontuações: ", error);
+                saveFeedback.textContent = 'Erro ao salvar. Tente novamente.';
+                setTimeout(() => { saveFeedback.textContent = ''; }, 2500);
+            }
+        }
+
+        async function populateScoresForActivityView() {
+            const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
+            const querySnapshot = await getDocs(scoresCollectionRef);
+            const allScores = {};
+            querySnapshot.forEach(doc => { allScores[doc.id] = doc.data().scores || {}; });
+
+            const scoreEntries = classListByActivity.querySelectorAll('.score-entry');
+            scoreEntries.forEach(entry => {
+                const { className, roundForClass } = entry.dataset;
+                if (allScores[className] && allScores[className][roundForClass] !== undefined) {
+                    entry.querySelector('.score-input').value = allScores[className][roundForClass];
+                }
+            });
+        }
+
+        // --- Funções de Ranking (sem alterações) ---
+        function displayRanking(rankingData) {
+            const rankingContainer = document.getElementById('ranking-table');
+            if (rankingData.length === 0) {
+                rankingContainer.innerHTML = '<p class="text-center text-gray-500">Nenhuma pontuação registrada ainda.</p>'; return;
+            }
+            let html = '<ol class="space-y-2">';
+            rankingData.forEach((team, index) => {
+                const rank = index + 1;
+                let rankClasses = 'bg-gray-200 text-gray-700';
+                if (rank === 1) rankClasses = 'bg-amber-400 text-white';
+                if (rank === 2) rankClasses = 'bg-slate-400 text-white';
+                if (rank === 3) rankClasses = 'bg-orange-400 text-white';
+                html += `<li class="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border"><div class="flex items-center gap-3"><span class="w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full ${rankClasses}">${rank}</span><span class="font-medium text-gray-800">${team.className}</span></div><span class="text-blue-600 font-semibold">${team.totalScore} pontos</span></li>`;
+            });
+            html += '</ol>';
+            rankingContainer.innerHTML = html;
+        }
+
+        function listenForOverallRanking() {
+            const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/scores`);
+            onSnapshot(scoresCollectionRef, (snapshot) => {
+                const rankingData = [];
+                snapshot.forEach(doc => {
+                    const totalScore = Object.values(doc.data().scores || {}).reduce((sum, score) => sum + Number(score), 0);
+                    rankingData.push({ className: doc.id, totalScore });
+                });
+                rankingData.sort((a, b) => b.totalScore - a.totalScore);
+                displayRanking(rankingData);
+            });
+        }
+        
+        // 5. FUNÇÕES DE CONTROLE DA INTERFACE
+        function showView(viewToShow) {
+            mainView.classList.add('hidden');
+            activityDetailView.classList.add('hidden');
+            viewToShow.classList.remove('hidden');
+        }
+
+        function displayActivityView(activityId) {
+            currentActivityId = activityId;
+            activityTitle.textContent = `Atividade ${activityId}: ${activities[activityId]}`;
+            
+            const activitySchedule = invertedSchedules[activityId];
+            let html = '<ol class="list-inside space-y-4 text-gray-700">';
+            activitySchedule.forEach(({ round, class: className }, index) => {
+                const globalRound = index + 1;
+                html += `
+                    <li class="score-entry p-3 bg-gray-100 rounded-lg border border-gray-200 flex justify-between items-center flex-wrap gap-2" data-class-name="${className}" data-round-for-class="${round}">
+                        <div class="flex-grow pr-4">
+                            <span class="font-semibold text-gray-800 block sm:inline">Rodada ${globalRound}:</span>
+                            <span class="text-sm sm:text-base"> Turma ${className}</span>
+                        </div>
+                        <input type="number" min="0" class="score-input w-28 p-2 border border-gray-300 rounded-md text-center shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Pontos">
+                    </li>`;
+            });
+            html += '</ol>';
+            classListByActivity.innerHTML = html;
+            
+            populateScoresForActivityView();
+            showView(activityDetailView);
+            window.scrollTo(0, 0);
+        }
+
+        // 6. INICIALIZAÇÃO
+        async function initializeAppAndAuth() {
+            loadingOverlay.classList.remove('hidden');
+            try {
+                const runningOnPlatform = typeof __firebase_config !== 'undefined' && __firebase_config;
+                const firebaseConfig = runningOnPlatform ? JSON.parse(__firebase_config) : localFirebaseConfig;
+                appId = runningOnPlatform ? __app_id : 'gincana-local';
+
+                if (!runningOnPlatform && (!firebaseConfig || !firebaseConfig.apiKey)) {
+                    document.body.innerHTML = `<div class="text-red-600 text-center p-8 max-w-2xl mx-auto bg-red-50 rounded-lg shadow-md"><h2 class="font-bold text-xl mb-4">CONFIGURAÇÃO INCOMPLETA</h2><p>Para usar este aplicativo localmente, você precisa criar um projeto no Firebase e colar suas credenciais no código.</p></div>`; return;
+                }
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (runningOnPlatform && typeof __initial_auth_token !== 'undefined') { await signInWithCustomToken(auth, __initial_auth_token); } 
+                else { await signInAnonymously(auth); }
+                
+                createInvertedSchedules();
+                listenForOverallRanking();
+
+                Object.keys(activities).forEach(activityId => {
+                    const button = document.createElement('button');
+                    button.textContent = `Atividade ${activityId}`;
+                    button.className = 'bg-white hover:bg-blue-500 hover:text-white text-blue-500 font-bold py-4 px-2 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 border-2 border-blue-200 hover:border-blue-500';
+                    button.addEventListener('click', () => displayActivityView(activityId));
+                    activityButtonsContainer.appendChild(button);
+                });
+
+            } catch (error) {
+                console.error("Falha na inicialização do Firebase:", error);
+                document.body.innerHTML = `<p class="text-red-500 text-center p-8">Erro Crítico: Não foi possível conectar ao banco de dados.</p>`;
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        backButton.addEventListener('click', () => {
+            currentActivityId = null;
+            showView(mainView);
+        });
+        saveButton.addEventListener('click', saveScoresFromActivityView);
+
+        initializeAppAndAuth();
+    </script>
+</body>
+    <div style="position: fixed; top: 24px; left: 24px;">
+        <a href="index.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition">Voltar</a>
+    </div>
+</html>
+
