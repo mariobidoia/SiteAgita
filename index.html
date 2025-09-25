@@ -137,10 +137,21 @@
 
         <!-- View: Ranking -->
         <section id="rankingView" class="hidden">
-            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-4xl mx-auto border-t-8 border-primary">
-                <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-primary">🏆 Ranking Geral das Turmas 🏆</h2>
-                <div id="rankingList" class="space-y-4">
-                    <!-- Ranking será populado via JavaScript -->
+            <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-6xl mx-auto border-t-8 border-primary">
+                <!-- Ranking Geral -->
+                <div class="mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-primary">🏆 Ranking Geral das Turmas 🏆</h2>
+                    <div id="rankingList" class="space-y-4">
+                        <!-- Ranking geral será populado via JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Rankings por Atividade -->
+                <div>
+                    <h3 class="text-2xl font-bold text-center mb-8 text-primary">📊 Rankings por Atividade</h3>
+                    <div id="activityRankings" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Rankings individuais serão populados via JavaScript -->
+                    </div>
                 </div>
             </div>
         </section>
@@ -160,7 +171,14 @@
         import { getFirestore, doc, setDoc, onSnapshot, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DADOS E CONFIGURAÇÃO ---
-        const activities = ["ESCALADA HORIZONTAL", "ATLETISMO", "BOLA AO CESTO", "GINÁSTICA", "ARREMESSO AO ALVO", "CHINELO DE PAU", "PULAR CORDA", "DESAFIO DO TRAVESSÃO", "CORRER ENSACADO", "PULAR CORDA INDIVIDUAL", "DESAFIO DE EMBAIXADINHAS", "REVEZAMENTO MALUCO", "CORRIDA DE PARCEIROS", "CORRIDA DA COLHER", "CARRINHO DE MÃO HUMANO", "MONTAGEM DA FRASE", "QUEBRA-CABEÇA", "ARREMESSO NO COPO"];
+        const activities = [
+            "ESCALADA HORIZONTAL", "ATLETISMO", "BOLA AO CESTO", "GINÁSTICA", "ARREMESSO AO ALVO", "CHINELO DE PAU", "PULAR CORDA", "DESAFIO DO TRAVESSÃO", "CORRER ENSACADO", "PULAR CORDA INDIVIDUAL", "DESAFIO DE EMBAIXADINHAS", "REVEZAMENTO MALUCO", "CORRIDA DE PARCEIROS", "CORRIDA DA COLHER", "CARRINHO DE MÃO HUMANO", "MONTAGEM DA FRASE", "QUEBRA-CABEÇA", "ARREMESSO NO COPO",
+            "ENCERRAMENTO: PARTICIPAÇÃO (%)",
+            "PARTICIPAÇÃO FESTA JUNINA (%)"
+        ];
+        const participationActivityIndex = activities.length - 2;
+        const participationJuninaActivityIndex = activities.length - 1;
+        const timeBasedActivities = [5, 8, 11, 12, 14]; // Índices das atividades baseadas em tempo (começa do 0)
         const teams = ["M1B", "T2B", "M2E", "T2C", "M2A", "T2A", "1QSD", "1AT", "2MM", "2MT", "1ETM", "1DTM", "2ETM", "2DTM", "1ADMM", "1ADMT", "T1AD"];
         const correctPassword = "aquelemario"; // Mantenha a senha como solicitado
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'agita-senai-marilia';
@@ -236,7 +254,7 @@
         function renderActivities() {
             homeView.innerHTML = '';
             const colors = ['bg-primary', 'bg-secondary', 'bg-accent'];
-            const emojis = ['🧗', '🏃', '🏀', '🤸', '🎯', '👟', '🪢', '⚽', '🏃‍♂️', '🪢', '⚽', '🏃‍♀️', '👫', '🥄', '🤝', '🧩', '🧩', '🥤'];
+            const emojis = ['🧗', '🏃', '🏀', '🤸', '🎯', '👟', '🪢', '⚽', '🏃‍♂️', '🪢', '⚽', '🏃‍♀️', '👫', '🥄', '🤝', '🧩', '🧩', '🥤', '🎉','🍿'];
             
             activities.forEach((activity, index) => {
                 const isCompleted = teams.some(team => scores[index]?.[team] > 0);
@@ -262,30 +280,117 @@
 
         function renderTeams() {
             teamsGrid.innerHTML = '';
+            const isTimeBasedActivity = timeBasedActivities.includes(currentActivity);
+            const isParticipationActivity = currentActivity === participationActivityIndex;
+            const isParticipationJuninaActivity = currentActivity === participationJuninaActivityIndex;
             teams.forEach((team, index) => {
                 const card = document.createElement('div');
                 card.className = `bg-gray-50 rounded-lg p-3 border-2 border-gray-200 shadow-sm transform hover:scale-105 transition-all bounce-in`;
                 card.style.animationDelay = `${index * 0.03}s`;
+                const rawVal = scores[currentActivity]?.[team];
+                let displayVal = '';
+                if (isTimeBasedActivity && rawVal > 0) {
+                    const minutes = Math.floor(rawVal / 60);
+                    const seconds = Math.floor(rawVal % 60);
+                    displayVal = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else if ((isParticipationActivity || isParticipationJuninaActivity) && rawVal > 0) {
+                    displayVal = (typeof rawVal === 'number') ? rawVal.toFixed(2) : String(rawVal);
+                } else if (!isTimeBasedActivity && !isParticipationActivity && !isParticipationJuninaActivity && rawVal > 0) {
+                    displayVal = (typeof rawVal === 'number') ? rawVal.toFixed(2) : String(rawVal);
+                }
                 card.innerHTML = `
                     <label class="block text-sm font-bold text-gray-700 mb-2 text-center">${team}</label>
-                    <input 
-                        type="number" 
-                        min="0" 
-                        value="${scores[currentActivity]?.[team] || 0}"
-                        class="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg font-bold"
-                        data-team="${team}"
-                    >
+                    ${isTimeBasedActivity ? 
+                        `<input 
+                            type="text" 
+                            pattern="[0-9]{2}:[0-9]{2}"
+                            placeholder="00:00"
+                            maxlength="5"
+                            value="${displayVal}"
+                            class="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg font-bold"
+                            data-team="${team}"
+                            oninput="this.value = this.value.replace(/[^0-9:]/g, '').replace(/(.*:.*):/, '$1')"
+                            onkeypress="if(this.value.length === 2) this.value += ':'"
+                        >` :
+                        (isParticipationActivity || isParticipationJuninaActivity) ?
+                        `<input 
+                            type="number" 
+                            min="0" max="100" step="0.01"
+                            placeholder="%"
+                            value="${displayVal}"
+                            class="w-full p-2 border-2 border-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-center text-lg font-bold"
+                            data-team="${team}"
+                        >` :
+                        `<input 
+                            type="number" 
+                            min="0" 
+                            step="0.01"
+                            inputmode="decimal"
+                            value="${displayVal}"
+                            class="w-full p-2 border-2 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-lg font-bold"
+                            data-team="${team}"
+                        >`
+                    }
                 `;
                 teamsGrid.appendChild(card);
             });
         }
 
         function renderRanking() {
+            renderGeneralRanking();
+            renderActivityRankings();
+        }
+        
+        function renderGeneralRanking() {
             const teamTotals = {};
             teams.forEach(team => {
                 teamTotals[team] = 0;
                 activities.forEach((_, activityIndex) => {
-                    teamTotals[team] += scores[activityIndex]?.[team] || 0;
+                    if (timeBasedActivities.includes(activityIndex)) {
+                        const activityScores = {};
+                        teams.forEach(t => {
+                            activityScores[t] = scores[activityIndex]?.[t] || 0;
+                        });
+                        const sortedTeams = Object.entries(activityScores)
+                            .filter(([,score]) => score > 0)
+                            .sort(([,a], [,b]) => a - b);
+                        const position = sortedTeams.findIndex(([t]) => t === team) + 1;
+                        if (position > 0) {
+                            if (position === 1) teamTotals[team] += 150;
+                            else if (position > 1 && position <= 8) teamTotals[team] += 150 - ((position - 1) * 10);
+                            else teamTotals[team] += 70;
+                        }
+                    } else if (activityIndex === participationActivityIndex) {
+                        const participationScores = {};
+                        teams.forEach(t => {
+                            participationScores[t] = scores[activityIndex]?.[t] || 0;
+                        });
+                        const sortedParticipation = Object.entries(participationScores)
+                            .filter(([,perc]) => perc > 0)
+                            .sort(([,a], [,b]) => b - a);
+                        const pos = sortedParticipation.findIndex(([t]) => t === team) + 1;
+                        if (pos > 0) {
+                            if (pos === 1) teamTotals[team] += 400;
+                            else if (pos > 1 && pos <= 17) teamTotals[team] += 400 - ((pos - 1) * 20);
+                            else teamTotals[team] += 80;
+                        }
+                    } else if (activityIndex === participationJuninaActivityIndex) {
+                        const participationJuninaScores = {};
+                        teams.forEach(t => {
+                            participationJuninaScores[t] = scores[activityIndex]?.[t] || 0;
+                        });
+                        const sortedJunina = Object.entries(participationJuninaScores)
+                            .filter(([,perc]) => perc > 0)
+                            .sort(([,a], [,b]) => b - a);
+                        const posJunina = sortedJunina.findIndex(([t]) => t === team) + 1;
+                        if (posJunina > 0) {
+                            if (posJunina === 1) teamTotals[team] += 200;
+                            else if (posJunina > 1 && posJunina <= 21) teamTotals[team] += 200 - ((posJunina - 1) * 10);
+                            else teamTotals[team] += 10;
+                        }
+                    } else {
+                        teamTotals[team] += scores[activityIndex]?.[team] || 0;
+                    }
                 });
             });
             
@@ -309,9 +414,95 @@
                         <span class="text-3xl mr-4">${position}º ${medal}</span>
                         <span class="text-xl ${textColor}">${team}</span>
                     </div>
-                    <div class="text-2xl font-bold ${textColor}">${total} pts</div>
+                    <div class="text-2xl font-bold ${textColor}">${total.toFixed(2)} pts</div>
                 `;
                 rankingList.appendChild(item);
+            });
+        }
+
+        function renderActivityRankings() {
+            const activityRankings = document.getElementById('activityRankings');
+            activityRankings.innerHTML = '';
+
+            activities.forEach((activity, activityIndex) => {
+                const activityScores = {};
+                teams.forEach(team => {
+                    activityScores[team] = scores[activityIndex]?.[team] || 0;
+                });
+
+                const isTimeBasedActivity = timeBasedActivities.includes(activityIndex);
+                const isParticipationActivity = activityIndex === participationActivityIndex;
+                const isParticipationJuninaActivity = activityIndex === participationJuninaActivityIndex;
+                let sortedTeams;
+                if (isTimeBasedActivity) {
+                    sortedTeams = Object.entries(activityScores)
+                        .filter(([,score]) => score > 0)
+                        .sort(([,a], [,b]) => a - b);
+                } else if (isParticipationActivity || isParticipationJuninaActivity) {
+                    sortedTeams = Object.entries(activityScores)
+                        .filter(([,perc]) => perc > 0)
+                        .sort(([,a], [,b]) => b - a);
+                } else {
+                    sortedTeams = Object.entries(activityScores)
+                        .filter(([,score]) => score > 0)
+                        .sort(([,a], [,b]) => b - a);
+                }
+                const rankingCard = document.createElement('div');
+                rankingCard.className = 'bg-white rounded-xl shadow-md p-4 border-2 border-gray-200';
+                const title = document.createElement('h4');
+                title.className = 'text-lg font-bold mb-4 text-primary text-center';
+                title.innerHTML = `${activityIndex + 1}. ${activity} ${isTimeBasedActivity ? '⏱️' : (isParticipationActivity || isParticipationJuninaActivity) ? '👥' : '🎯'}`;
+                const list = document.createElement('div');
+                list.className = 'space-y-2';
+                sortedTeams.forEach(([team, score], index) => {
+                    const item = document.createElement('div');
+                    const position = index + 1;
+                    const medal = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : '';
+                    const hasScore = score > 0;
+                    item.className = `flex justify-between items-center py-1 px-2 rounded ${hasScore ? 'bg-gray-50' : 'bg-gray-50/50'}`;
+                    let points = 0;
+                    if (isTimeBasedActivity && hasScore) {
+                        if (position === 1) points = 150;
+                        else if (position > 1 && position <= 8) points = 150 - ((position - 1) * 10);
+                        else points = 70;
+                    }
+                    if (isParticipationActivity && hasScore) {
+                        if (position === 1) points = 400;
+                        else if (position > 1 && position <= 17) points = 400 - ((position - 1) * 20);
+                        else points = 80;
+                    }
+                    if (isParticipationJuninaActivity && hasScore) {
+                        if (position === 1) points = 200;
+                        else if (position > 1 && position <= 21) points = 200 - ((position - 1) * 10);
+                        else points = 10;
+                    }
+                    item.innerHTML = `
+                        <span class="font-semibold ${!hasScore ? 'text-gray-500' : ''}">${position}º ${medal} ${team}</span>
+                        ${isTimeBasedActivity ? 
+                            `<div class="text-right">
+                                <div class="font-bold ${!hasScore ? 'text-gray-400' : 'text-blue-600'}">
+                                    ${hasScore ? score.toFixed(2) + 's' : '-'}
+                                </div>
+                                ${hasScore ? `<div class="text-sm text-green-600">(${points} pts)</div>` : ''}
+                            </div>` 
+                        : (isParticipationActivity || isParticipationJuninaActivity) ?
+                            `<div class="text-right">
+                                <div class="font-bold ${!hasScore ? 'text-gray-400' : 'text-blue-600'}">
+                                    ${hasScore ? score.toFixed(2) + '%' : '-'}
+                                </div>
+                                ${hasScore ? `<div class="text-sm text-green-600">(${points} pts)</div>` : ''}
+                            </div>`
+                        :
+                            `<span class="font-bold ${!hasScore ? 'text-gray-400' : 'text-green-600'}">
+                                ${hasScore ? score.toFixed(2) + ' pts' : '-'}
+                            </span>`
+                        }
+                    `;
+                    list.appendChild(item);
+                });
+                rankingCard.appendChild(title);
+                rankingCard.appendChild(list);
+                activityRankings.appendChild(rankingCard);
             });
         }
 
@@ -348,13 +539,32 @@
 
         async function saveScoresToFirestore(isInitial = false) {
             if (!isInitial) {
-                 const inputs = teamsGrid.querySelectorAll('input');
-                 if (!scores[currentActivity]) scores[currentActivity] = {};
-                 inputs.forEach(input => {
-                    const team = input.dataset.team;
-                    scores[currentActivity][team] = parseInt(input.value) || 0;
-                });
-            }
+                     const inputs = teamsGrid.querySelectorAll('input');
+                     if (!scores[currentActivity]) scores[currentActivity] = {};
+                    inputs.forEach(input => {
+                        const team = input.dataset.team;
+                        const isTimeBasedActivity = timeBasedActivities.includes(currentActivity);
+                        const isParticipationActivity = currentActivity === participationActivityIndex;
+                        const isParticipationJuninaActivity = currentActivity === participationJuninaActivityIndex;
+                        if (isTimeBasedActivity) {
+                            const timeString = input.value.trim();
+                            if (timeString && /^\d{2}:\d{2}$/.test(timeString)) {
+                                const [minutes, seconds] = timeString.split(':').map(Number);
+                                scores[currentActivity][team] = minutes * 60 + seconds;
+                            } else {
+                                scores[currentActivity][team] = 0;
+                            }
+                        } else if (isParticipationActivity || isParticipationJuninaActivity) {
+                            const raw = String(input.value).replace(',', '.').trim();
+                            const parsed = parseFloat(raw);
+                            scores[currentActivity][team] = Number.isFinite(parsed) ? parsed : 0;
+                        } else {
+                            const raw = String(input.value).replace(',', '.').trim();
+                            const parsed = parseFloat(raw);
+                            scores[currentActivity][team] = Number.isFinite(parsed) ? parsed : 0;
+                        }
+                    });
+                }
            
             try {
                 await setDoc(dbRef, { scores: scores });
