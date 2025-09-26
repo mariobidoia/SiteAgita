@@ -172,7 +172,7 @@
 
         // --- DADOS E CONFIGURAÇÃO ---
         const activities = [
-            "ESCALADA HORIZONTAL", "ATLETISMO", "BOLA AO CESTO", "GINÁSTICA", "ARREMESSO AO ALVO", "CHINELO DE PAU", "PULAR CORDA", "DESAFIO DO TRAVESSÃO", "CORRER ENSACADO", "PULAR CORDA INDIVIDUAL", "DESAFIO DE EMBAIXADINHAS", "REVEZAMENTO MALUCO", "CORRIDA DE PARCEIROS", "CORRIDA DA COLHER", "CARRINHO DE MÃO HUMANO", "MONTAGEM DA FRASE", "QUEBRA-CABEÇA", "ARREMESSO NO COPO",
+            "ESCALADA HORIZONTAL", "ATLETISMO", "BOLA AO CESTO", "GINÁSTICA", "ARREMESSO AO ALVO", "CHINELO DE PAU", "PULAR CORDA", "DESAFIO DO TRAVESSÃO", "CORRER ENSACADO", "PULAR CORDA INDIVIDUAL", "DESAFIO DE EMBAIXADINHAS", "REVEZAMENTO MALUCO", "CORRIDA DE PARCEIROS", "CORRIDA DA COLHER", "CARRINHO DE MÃO HUMANO", "ARREMESSO NO COPO", "QUEBRA-CABEÇA", "MONTAGEM DA FRASE",
             "ENCERRAMENTO: PARTICIPAÇÃO (%)",
             "PARTICIPAÇÃO FESTA JUNINA (%)"
         ];
@@ -254,7 +254,7 @@
         function renderActivities() {
             homeView.innerHTML = '';
             const colors = ['bg-primary', 'bg-secondary', 'bg-accent'];
-            const emojis = ['🧗', '🏃', '🏀', '🤸', '🎯', '👟', '🪢', '⚽', '🏃‍♂️', '🪢', '⚽', '🏃‍♀️', '👫', '🥄', '🤝', '🧩', '🧩', '🥤', '🎉','🍿'];
+            const emojis = ['🧗', '🏃', '🏀', '🤸', '🎯', '👟', '🪢', '⚽', '🏃‍♂️', '🪢', '⚽', '🏃‍♀️', '👫', '🥄', '🤝', '🥤', '🧩', '🧩', '🎉','🍿'];
             
             activities.forEach((activity, index) => {
                 const isCompleted = teams.some(team => scores[index]?.[team] > 0);
